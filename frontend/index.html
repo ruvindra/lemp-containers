@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Containerized LEMP Example</title>
+  </head>
+
+<body>
+
+  <h1>Frontend (Nginx)</h1>
+
+  <div id="msg">Loading...</div>
+  <div id="time">Loading server time...</div>
+  <div id="visits">Loading visit count...</div>
+
+  <script>
+
+    fetch('/api')
+      .then(r => r.json())
+      .then(d => { document.getElementById('msg').innerText =
+        d.message; })
+      .catch(e => { document.getElementById('msg').innerText = 'APIerror: ' + e; });
+
+    fetch('/api/time')
+      .then(r => r.json())
+      .then(d => { document.getElementById('time').innerText =
+        'MySQL server time: ' + d.server_time; })
+      .catch(e => { document.getElementById('time').innerText = 'Time API error: ' + e; });
+
+    fetch('/api/visits', { method: 'POST' })
+      .then(r => r.json())
+      .then(d => { document.getElementById('visits').innerText =
+        'Page views (persisted in MySQL): ' + d.visits; })
+      .catch(e => { document.getElementById('visits').innerText = 'Visits API error: ' + e; });
+
+  </script>
+
+</body>
+</html>
