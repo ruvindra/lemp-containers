@@ -1,40 +1,339 @@
 <!DOCTYPE html>
-
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Containerized LEMP Example</title>
-  </head>
-
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>From Compose to Rahti — Week 4, Cloud Services</title>
+<style>
+  :root{
+    --ink:#1c2430;
+    --paper:#faf8f4;
+    --card:#ffffff;
+    --line:#e2ddd3;
+    --accent:#2f6f5e;
+    --accent-dark:#1f4d40;
+    --mono-bg:#161b22;
+    --mono-text:#d8e0e8;
+    --warn-bg:#fdf1ea;
+    --warn-line:#e0a672;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.6;
+  }
+  header{
+    background:var(--accent-dark);
+    color:#f2efe8;
+    padding:3rem 1.5rem 2.5rem;
+  }
+  header .wrap{max-width:840px;margin:0 auto;}
+  header h1{
+    font-family:Georgia,"Iowan Old Style",serif;
+    font-size:2rem;
+    margin:0 0 .3rem;
+    letter-spacing:.2px;
+  }
+  header p{margin:0;color:#cfe3da;font-size:1.05rem;}
+  main{max-width:840px;margin:0 auto;padding:2.2rem 1.5rem 5rem;}
+  .demo{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-left:4px solid var(--accent);
+    border-radius:4px;
+    padding:1.4rem 1.6rem;
+    margin:0 0 3rem;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+  .demo h2{margin-top:0;font-size:1.05rem;color:var(--accent-dark);font-family:Georgia,serif;}
+  .demo div[id]{font-size:.95rem;margin:.35rem 0;color:#333;}
+  section{margin-bottom:2.9rem;}
+  h2{
+    font-family:Georgia,"Iowan Old Style",serif;
+    font-size:1.45rem;
+    color:var(--accent-dark);
+    border-bottom:1px solid var(--line);
+    padding-bottom:.4rem;
+    margin:0 0 1rem;
+  }
+  h3{
+    font-family:Georgia,serif;
+    font-size:1.1rem;
+    color:var(--ink);
+    margin:1.5rem 0 .5rem;
+  }
+  p{margin:.7rem 0;max-width:72ch;}
+  ul,ol{max-width:72ch;padding-left:1.4rem;}
+  li{margin:.35rem 0;}
+  code, .inline-code{
+    font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    background:#eee9dd;
+    padding:.1rem .35rem;
+    border-radius:3px;
+    font-size:.88em;
+  }
+  pre{
+    background:var(--mono-bg);
+    color:var(--mono-text);
+    padding:1rem 1.1rem;
+    border-radius:6px;
+    overflow-x:auto;
+    font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    font-size:.85rem;
+    line-height:1.5;
+  }
+  figure{margin:1.1rem 0 1.6rem;}
+  figure img{
+    max-width:100%;
+    border:1px solid var(--line);
+    border-radius:4px;
+    display:block;
+  }
+  figcaption{
+    font-size:.85rem;
+    color:#6b6255;
+    margin-top:.45rem;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+  .callout{
+    background:#eef4f0;
+    border-left:4px solid var(--accent);
+    padding:.9rem 1.1rem;
+    border-radius:4px;
+    margin:1rem 0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    font-size:.95rem;
+  }
+  .bug{
+    background:var(--warn-bg);
+    border-left:4px solid var(--warn-line);
+    padding:.9rem 1.1rem;
+    border-radius:4px;
+    margin:1rem 0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    font-size:.95rem;
+  }
+  .bug strong{color:#9a5a1c;}
+  table{border-collapse:collapse;width:100%;margin:1rem 0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:.92rem;}
+  td,th{border:1px solid var(--line);padding:.5rem .7rem;text-align:left;}
+  th{background:#f1ede3;}
+  footer{
+    text-align:center;
+    color:#8a8270;
+    font-size:.85rem;
+    padding:2rem 1rem 3rem;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+  .two-col{display:flex;gap:1.2rem;flex-wrap:wrap;}
+  .two-col figure{flex:1 1 260px;}
+  .kicker{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    font-size:.85rem;
+    color:#7c8f86;
+    margin:0 0 .2rem;
+  }
+</style>
+</head>
 <body>
 
-  <h1>Frontend (Nginx)</h1>
+<header>
+  <div class="wrap">
+    <h1>From Docker Compose to Rahti</h1>
+    <p>Week 4, Cloud Services — moving the LEMP app onto Kubernetes, and everything that went wrong along the way</p>
+  </div>
+</header>
 
-  <div id="msg">Loading...</div>
-  <div id="time">Loading server time...</div>
-  <div id="visits">Loading visit count...</div>
+<main>
 
-  <script>
+  <div class="demo">
+    <h2>Live demo</h2>
+    <div id="msg">Loading...</div>
+    <div id="time">Loading server time...</div>
+    <div id="visits">Loading visit count...</div>
+  </div>
 
-    fetch('/api')
-      .then(r => r.json())
-      .then(d => { document.getElementById('msg').innerText =
-        d.message; })
-      .catch(e => { document.getElementById('msg').innerText = 'APIerror: ' + e; });
+  <section id="setup">
+    <p class="kicker">Where I started</p>
+    <h2>Getting the three-container app onto Rahti</h2>
+    <p>The starting point was the same Nginx / Flask / MySQL application from the previous exercise, running locally with Docker Compose. This week's job was to get the same three pieces running on Rahti instead — as Kubernetes Deployments and Services, with the frontend exposed publicly and the backend and database only reachable internally.</p>
+    <div class="callout">Nginx (frontend) → Flask/Gunicorn (backend) → MySQL 8.4 (database)</div>
+    <p>On the Kubernetes side that meant a Deployment and Service for each of the three components, a ConfigMap for ordinary configuration, a Secret for the database credentials, a PersistentVolumeClaim for MySQL's storage, and a public Route pointing only at the frontend.</p>
 
-    fetch('/api/time')
-      .then(r => r.json())
-      .then(d => { document.getElementById('time').innerText =
-        'MySQL server time: ' + d.server_time; })
-      .catch(e => { document.getElementById('time').innerText = 'Time API error: ' + e; });
+    <h3>Shipping the images</h3>
+    <p>Before any of that could run on Rahti, the frontend and backend images had to exist somewhere Rahti could pull them from. I tagged both with a version number and pushed them to Docker Hub.</p>
+    <figure>
+      <img src="images/step09.png" alt="Tagging frontend and backend images with version 1.0.0">
+      <figcaption>Tagging the locally built images as <code>ruvindra/lemp-backend:1.0.0</code> and <code>ruvindra/lemp-frontend:1.0.0</code>.</figcaption>
+    </figure>
+    <figure>
+      <img src="images/step14.png" alt="Docker Hub showing both repositories pushed">
+      <figcaption>Both repositories live on Docker Hub, public, ready for Rahti to pull.</figcaption>
+    </figure>
 
-    fetch('/api/visits', { method: 'POST' })
-      .then(r => r.json())
-      .then(d => { document.getElementById('visits').innerText =
-        'Page views (persisted in MySQL): ' + d.visits; })
-      .catch(e => { document.getElementById('visits').innerText = 'Visits API error: ' + e; });
+    <h3>The first crash</h3>
+    <p>The very first deployment attempt left the frontend Pod stuck crash-looping with:</p>
+    <pre>nginx: [emerg] mkdir() "/var/cache/nginx/client_temp" failed (13: Permission denied)</pre>
+    <p>Rahti runs containers under an arbitrary, non-root user ID, so Nginx's default cache directories weren't writable. The fix was to point Nginx's temp/cache paths at <code>/tmp</code> instead, inside <code>nginx.conf</code>, which is writable regardless of UID — then rebuild and redeploy.</p>
+  </section>
 
-  </script>
+  <section id="proof">
+    <p class="kicker">Does it actually work?</p>
+    <h2>Proving the three tiers talk to each other</h2>
+    <p>Getting Pods to <code>Running</code> doesn't prove much on its own — the real test is whether a request actually crosses all three tiers and comes back with something that could only have come from the database.</p>
+    <figure>
+      <img src="images/step03.png" alt="Backend API endpoint returning a message from MySQL">
+      <figcaption><code>/api</code> returning <code>{"message":"Hello from MySQL via Flask!"}</code> — the frontend's request reached the backend, which reached MySQL, and the answer made it all the way back.</figcaption>
+    </figure>
+    <p>That first version of the backend only ever returned a fixed string, though — so it didn't really prove MySQL was doing anything. I added two endpoints that make the database's actual involvement unmistakable:</p>
+
+    <h3><code>/api/time</code> — a real read</h3>
+    <p>Runs <code>SELECT NOW();</code> and hands back MySQL's own clock. A value that changes every time you refresh can't be hard-coded.</p>
+    <figure>
+      <img src="images/step22.png" alt="api/time endpoint returning the current MySQL server time">
+      <figcaption>The live database time, read fresh on every request.</figcaption>
+    </figure>
+
+    <h3><code>/api/visits</code> — a real write</h3>
+    <p>Every page load sends a <code>POST</code> here, which increments a counter stored in a <code>visits</code> table and returns the new total. Because the number lives in MySQL rather than the container, it keeps climbing across refreshes instead of resetting.</p>
+    <figure>
+      <img src="images/step21.png" alt="Local test showing greeting, server time, and visit count">
+      <figcaption>Greeting, live server time, and a visit counter already at 3 after a few refreshes.</figcaption>
+    </figure>
+  </section>
+
+  <section id="persistbug">
+    <p class="kicker">The interesting part</p>
+    <h2>Chasing down a persistence bug</h2>
+    <p>The assignment asks for proof that the database survives its Pod being deleted and recreated. My first attempt at this didn't go as planned, and tracking down why turned into the most useful part of the whole week.</p>
+
+    <h3>It didn't survive</h3>
+    <p>I deleted the running MySQL Pod, expected the visit counter to pick up where it left off once the replacement came online, and instead got this:</p>
+    <figure>
+      <img src="images/persist_fail1.png" alt="Visits API error after first MySQL pod deletion">
+      <figcaption><code>/api/visits</code> came back with an HTML error page instead of JSON.</figcaption>
+    </figure>
+    <div class="bug">
+      <strong>Root cause:</strong> <code>oc get pvc</code> showed <code>mysql-data</code> stuck on <code>Pending</code> — never bound to any actual storage.
+    </div>
+    <figure>
+      <img src="images/pvc_pending.png" alt="oc get pvc showing mysql-data stuck Pending">
+      <figcaption>The claim had been sitting unbound the whole time.</figcaption>
+    </figure>
+    <p><code>oc describe pvc</code> showed <code>Used By: &lt;none&gt;</code>, and <code>oc get deployment db -o yaml</code> confirmed why — the Pod's actual volume was an <code>emptyDir</code>, not the PVC at all:</p>
+    <pre>volumes:
+- emptyDir: {}
+  name: mysql-storage</pre>
+    <p><code>emptyDir</code> is ephemeral storage tied to the Pod's own lifetime — deleting the Pod deletes the data with it. The manifest itself had the bug, a misplaced indent in <code>rahti/mysql-deployment.yaml</code>:</p>
+    <pre>persistentVolumeClaim:
+claimName: mysql-data        <span style="color:#e08a5a"># claimName isn't nested — treated as unrelated</span></pre>
+    <p>With <code>claimName</code> sitting as a sibling of <code>persistentVolumeClaim</code> instead of inside it, Kubernetes saw no valid volume source and quietly defaulted to <code>emptyDir</code>.</p>
+
+    <h3>The fix, and trying again</h3>
+    <pre>persistentVolumeClaim:
+  claimName: mysql-data        <span style="color:#7fb894"># nested correctly</span></pre>
+    <p>After correcting the indent and re-applying, <code>oc get pvc</code> finally showed <code>Bound</code>, with a real 1Gi volume attached. One more wrinkle: the backend only creates the <code>visits</code> table once, at startup — and it had been running since before this properly-bound volume existed, so the table had never been created on it. Restarting the backend Pod re-ran that startup logic and created it fresh.</p>
+    <p>With both fixed, I built the counter up to 4 and deleted the MySQL Pod again:</p>
+    <div class="two-col">
+      <figure>
+        <img src="images/persist_before4.png" alt="Visit counter at 4 before deleting the MySQL pod">
+        <figcaption>Before: counter at 4.</figcaption>
+      </figure>
+      <figure>
+        <img src="images/persist_after5.png" alt="Visit counter at 5 after MySQL pod was deleted and recreated">
+        <figcaption>After: counter at 5 — continued, not reset.</figcaption>
+      </figure>
+    </div>
+    <p>4 became 5, not 0 or 1. That's the actual proof: the data now lives on the bound PersistentVolumeClaim rather than inside whichever Pod happens to be running.</p>
+
+  </section>
+
+  <section id="selfheal">
+    <p class="kicker">Pushing on it deliberately</p>
+    <h2>What happens when a Pod disappears</h2>
+
+    <h3>Killing the backend on purpose</h3>
+    <p>A Deployment is supposed to notice when it has fewer Pods than it wants and fix that itself. I deleted the running backend Pod to see it happen:</p>
+    <pre>PS C:\Cloud Service\lemp-containers&gt; .\oc delete pod backend-779744986f-p49ff
+pod "backend-779744986f-p49ff" deleted from rahti-app-1 namespace
+PS C:\Cloud Service\lemp-containers&gt; .\oc get pods -w
+NAME                         READY   STATUS      RESTARTS   AGE
+backend-779744986f-zcsl9     1/1     Running     0          47s
+...</pre>
+    <p>A replacement Pod appeared within seconds. The Deployment continuously compares its actual Pod count against <code>spec.replicas</code>; the moment it sees a shortfall, its ReplicaSet schedules a new one — no manual intervention needed.</p>
+    <figure>
+      <img src="images/podrec_confirm.png" alt="App still working after backend pod recovery, visit counter at 30">
+      <figcaption>The app kept responding right away, since the Service routes to whichever backend Pod is healthy — visit counter had climbed to 30 by this point.</figcaption>
+    </figure>
+
+    <h3>Running two backends at once</h3>
+    <p>Next, scaling the backend up from one replica to two, to confirm multiple copies can genuinely run side by side:</p>
+    <figure>
+      <img src="images/scale_up_cmd.png" alt="oc scale deployment backend replicas=2 command">
+      <figcaption><code>oc scale deployment backend --replicas=2</code></figcaption>
+    </figure>
+    <figure>
+      <img src="images/scale_up_pods.png" alt="Two backend pods both running">
+      <figcaption>Two backend Pods, different suffixes, both <code>1/1 Running</code>.</figcaption>
+    </figure>
+    <p>The frontend never had to change or learn a second address — it only ever talks to the backend Service, which spreads requests across whatever Pods are currently healthy behind it. After confirming the app still worked fine with two replicas, I scaled back down to one:</p>
+    <figure>
+      <img src="images/scale_down_pods.png" alt="Back to a single backend pod after scaling down">
+      <figcaption>Back to a single backend Pod.</figcaption>
+    </figure>
+  </section>
+
+  <section id="secrets">
+    <p class="kicker">Keeping the password out of Git</p>
+    <h2>ConfigMap and Secret, and why they're not the same thing</h2>
+    <p>The backend reads its database settings from two different places, split by how sensitive each value is:</p>
+    <ul>
+      <li>A ConfigMap (<code>app-config</code>) holds <code>DB_HOST</code>, <code>DB_NAME</code>, and <code>DB_USER</code> — plain configuration, fine to read in the clear.</li>
+      <li>A Secret (<code>mysql-secret</code>) holds <code>DB_PASSWORD</code> and <code>MYSQL_ROOT_PASSWORD</code> — values that shouldn't be sitting in a file in Git or visible in a casual <code>oc get</code>.</li>
+    </ul>
+    <p>Kubernetes stores Secret data base64-encoded and access-controlled separately from ConfigMaps, so it doesn't show up in plain text by accident the way a ConfigMap does. Just as importantly, the Secret was created directly on the cluster with <code>oc create secret</code> rather than from a YAML file — the password never had to touch the Git repository at all.</p>
+  </section>
+
+  <section id="update">
+    <p class="kicker">Shipping a change</p>
+    <h2>Rolling out the read/write feature</h2>
+    <p>Adding the read and write endpoints doubled as the assignment's application-update experiment. Both images got new version tags and were redeployed:</p>
+    <table>
+      <tr><th>Image</th><th>Before</th><th>After</th></tr>
+      <tr><td>ruvindra/lemp-backend</td><td>1.0.0</td><td>1.0.1</td></tr>
+      <tr><td>ruvindra/lemp-frontend</td><td>1.0.1</td><td>1.0.2</td></tr>
+    </table>
+    <figure>
+      <img src="images/step23.png" alt="Deployments configured and rolling update in progress">
+      <figcaption>Both Deployments report "configured"; new Pods start and reach <code>1/1 Running</code>, replacing the old ones with no gap in the Service.</figcaption>
+    </figure>
+  </section>
+
+</main>
+
+<script>
+
+  fetch('/api')
+    .then(r => r.json())
+    .then(d => { document.getElementById('msg').innerText =
+      d.message; })
+    .catch(e => { document.getElementById('msg').innerText = 'APIerror: ' + e; });
+
+  fetch('/api/time')
+    .then(r => r.json())
+    .then(d => { document.getElementById('time').innerText =
+      'MySQL server time: ' + d.server_time; })
+    .catch(e => { document.getElementById('time').innerText = 'Time API error: ' + e; });
+
+  fetch('/api/visits', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => { document.getElementById('visits').innerText =
+      'Page views (persisted in MySQL): ' + d.visits; })
+    .catch(e => { document.getElementById('visits').innerText = 'Visits API error: ' + e; });
+
+</script>
 
 </body>
 </html>
