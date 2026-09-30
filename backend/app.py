@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 import os
 import mysql.connector
+import redis
 
 app = Flask(__name__)
 
@@ -8,7 +9,9 @@ DB_HOST = os.getenv('DB_HOST', 'db')
 DB_USER = os.getenv('DB_USER', 'appuser')
 DB_PASSWORD = os.getenv('DB_PASSWORD', 'changeme')
 DB_NAME = os.getenv('DB_NAME', 'appdb')
+REDIS_HOST = os.getenv('REDIS_HOST', 'cache')
 
+r = redis.Redis(host=REDIS_HOST, port=6379, decode_responses=True)
 
 def get_connection():
     return mysql.connector.connect(
@@ -51,6 +54,10 @@ def index():
 
 @app.get('/api/time')
 def db_time():
+    """Read operation: current MySQL server time, cached in Redis for 5 seconds."""
+    cached = r.get('db_time')
+    if cached:
+        return jsonify(server_time=cached, cached=True)
     """Read operation: current MySQL server time."""
     conn = get_connection()
     cur = conn.cursor()
@@ -58,7 +65,21 @@ def db_time():
     row = cur.fetchone()
     cur.close()
     conn.close()
-    return jsonify(server_time=str(row[0]))
+    server_time = str(row[0])
+    r.setex('db_time', 5, server_time)  # cache for 5 seconds
+    return jsonify(server_time=server_time, cached=False)
+
+
+@app.get('/api/visits')
+def get_visits():
+    """Read-only: return the current visit count without incrementing it."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT count FROM visits WHERE id = 1")
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return jsonify(visits=row[0] if row else 0)
 
 
 @app.post('/api/visits')

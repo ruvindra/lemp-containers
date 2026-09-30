@@ -135,6 +135,48 @@
     color:#7c8f86;
     margin:0 0 .2rem;
   }
+  .week-divider{
+    background:var(--accent-dark);
+    color:#f2efe8;
+    padding:1.6rem 1.8rem;
+    border-radius:6px;
+    margin:3.8rem 0 2.4rem;
+  }
+  .week-divider p.kicker{color:#a9c9bd;margin:0 0 .3rem;}
+  .week-divider h2{color:#fff;border:none;margin:0;padding:0;font-size:1.55rem;}
+  .week-divider p.sub{color:#d8e6df;margin:.5rem 0 0;font-size:1rem;}
+  .qa-block{margin:0 0 2.2rem;}
+  .qa-block h3{margin-bottom:.4rem;}
+  .qa-block .q{font-style:italic;color:#5a5346;margin:0 0 .6rem;}
+  .source-note{font-size:.85rem;color:#6b6255;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;}
+  .step-list{list-style:none;padding:0;margin:1.2rem 0 2rem;}
+  .step-list > li{margin:0 0 2rem;padding-bottom:2rem;border-bottom:1px solid var(--line);}
+  .step-list > li:last-child{border-bottom:none;}
+  .step-list > li > p:first-child{margin-top:0;}
+  .step-list figure{margin:.6rem 0 0;}
+  .term-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:5px;
+    padding:1.2rem 1.4rem 1.4rem;
+    margin:0 0 1.6rem;
+  }
+  .term-card .term{
+    font-family:Georgia,"Iowan Old Style",serif;
+    font-size:1.05rem;
+    font-weight:bold;
+    color:var(--accent-dark);
+    margin:0 0 .35rem;
+  }
+  .term-card .def{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    font-size:.95rem;
+    color:#3d382e;
+    margin:0 0 1rem;
+    max-width:68ch;
+  }
+  .term-card figure{margin:0;}
+  .term-card .two-col{margin:0;}
 </style>
 </head>
 <body>
@@ -309,6 +351,211 @@ backend-779744986f-zcsl9     1/1     Running     0          47s
       <img src="images/step23.png" alt="Deployments configured and rolling update in progress">
       <figcaption>Both Deployments report "configured"; new Pods start and reach <code>1/1 Running</code>, replacing the old ones with no gap in the Service.</figcaption>
     </figure>
+  </section>
+
+  <div class="week-divider">
+    <p class="kicker">Continuing the diary</p>
+    <h2>Week 5 — Adding a Redis Cache</h2>
+    <p class="sub">Same app, same Rahti project — api/time & api/visits display on the top of the page</p>
+  </div>
+
+  <section id="parta">
+    <p class="kicker">Part A</p>
+    <h2>Questions &amp; answers</h2>
+
+    <div class="qa-block">
+      <h3>1. Explain the difference between SAML and OAuth? When would a company choose one over the other?</h3>
+
+      <p>SAML and OAuth solve different problems. SAML (Security Assertion Markup Language) is designed for authentication and Single Sign On (SSO). It verifies who a user is and passes that identity from an identity provider (IdP), such as Okta or Azure AD, to a service provider. The user logs in once and gets access to several applications. SAML exchanges verbose XML assertions and is built mainly for enterprise web applications and corporate intranets.</p>
+      <p>OAuth (Open Authorization) is designed for authorization and delegated access. It lets an application access specific data or APIs on a user's behalf without ever seeing their password. Instead of an identity assertion, the application receives an access token, and the messages are lightweight JSON over HTTP. This makes OAuth a better fit for modern web apps, mobile apps, and public APIs.</p>
+      <p>A company would choose SAML for enterprise employee login, where staff sign in once through a corporate IdP and reach both internal and external workplace software such as Salesforce or Workday. It is also a good choice when legacy corporate systems require detailed, structured security assertions and strict single logout.</p>
+      <p>A company would choose OAuth when its application needs permission to read a user's data from another service. An example is a scheduling app accessing a user's Google Calendar without seeing their password. It also suits mobile apps, single page apps, and modern RESTful APIs, where the overhead of XML would be too heavy.</p>
+      <p class="source-note">Source: <a href="https://supertokens.com/blog/saml-vs-oauth" target="_blank" rel="noopener">https://supertokens.com/blog/saml-vs-oauth</a></p>
+    </div>
+
+    <div class="qa-block">
+      <h3>2. Describe how a decentralized or cooperative storage network (for example Sia or IPFS) differs from centralized object storage such as Allas or Amazon S3. What are the trade-offs?</h3>
+      
+      <p>Centralized storage such as Amazon S3 or CSC's Allas keeps your data in data centers run by one organization. Files are found by location (a URL pointing to that provider's servers), and you get a legally binding SLA for durability and availability.</p>
+      <p>Decentralized networks like IPFS and Sia rely on independent nodes around the world. In IPFS, files are content addressed: the identifier (CID) is a hash of the file itself, so any node holding a copy can serve it. Sia splits files into encrypted pieces, spreads them across hosts, and uses smart contracts and collateral to keep them available.</p>
+      <p><strong>Performance and reliability:</strong> S3 and Allas offer predictable speed and contractual uptime. Decentralized speed varies with the number and quality of nodes, and there is no legal guarantee. In IPFS, unpinned content can disappear.</p>
+      <p><strong>Censorship resistance and lock-in:</strong> A central provider can remove content or block accounts. Widely replicated decentralized content is much harder to take down, and a CID stays valid when you switch pinning services.</p>
+      <p><strong>Privacy and compliance:</strong> Centralized providers offer regional data control and certifications such as GDPR and HIPAA. IPFS content is public by default, so sensitive data must be encrypted before upload.</p>
+      <p><strong>Complexity and cost:</strong> S3 is simple, standard, and billed in normal currency. Decentralized storage needs pinning services, nodes, or (for Sia) cryptocurrency. It can be cheaper for archival or popular content, but costs are less predictable.</p>
+      <p>Choose centralized storage for enterprise apps, private data, compliance, and predictable performance. Choose decentralized storage for public, immutable, or archival content, blockchain applications, and avoiding dependence on a single provider.</p>
+      <p class="source-note">Source: <a href="https://ipfs.ninja/blog/ipfs-vs-s3" target="_blank" rel="noopener">https://ipfs.ninja/blog/ipfs-vs-s3</a></p>
+    </div>
+
+    <div class="qa-block">
+      <h3>3. What is YAML and why has it become the default configuration format for Kubernetes/Rahti manifests? Compare it briefly to JSON.</h3>
+      
+      <p>YAML is a human-readable data serialization format. It represents structured data (key-value mappings, lists, and scalars such as strings and numbers) using indentation, colons, and hyphens instead of brackets and quotation marks. It was designed to be easy for people to read and write, and it supports comments with #.</p>
+      <p>Kubernetes manifests are configuration files that people write, review, and keep in Git. YAML suits that work for several reasons. Deeply nested structures like pods, containers, ports, and volumes are easier to scan without braces and quotes. Comments let you explain why a setting exists, which JSON does not allow. Changes between versions are also easy to see in Git diffs. A single YAML file can hold several resources, such as a Deployment, a Service, and a Route, separated by ---. Finally, convention plays a big role: documentation, examples, and tools such as Helm and kubectl all use YAML, so everyone follows the same style. Rahti is CSC's OpenShift-based platform, so it inherits the same convention. Kubernetes itself accepts both formats, and internally its API works with JSON, so YAML is the default by convention, not by requirement.</p>
+      <p>JSON uses braces, brackets, and quotation marks, while YAML relies on indentation and hyphens. Both are easy to read, but YAML is generally considered the easiest for people, which is why it suits files that humans write and review. JSON does not allow comments, whereas YAML lets you add them with #.</p>
+      <p>JSON is built into most programming languages, while YAML needs a library to parse it. This makes JSON the better choice for APIs and data exchange between applications, and YAML the better choice for configuration files such as Kubernetes manifests, Docker files, and CloudFormation templates. The main weakness of JSON is that it is verbose and has no comments. The main weakness of YAML is that indentation mistakes can break the file.</p>
+      <p class="source-note">Source: <a href="https://aws.amazon.com/compare/the-difference-between-yaml-and-json/#:~:text=YAML%20and%20JSON%20are%20two,is%20also%20readable%20by%20humans." target="_blank" rel="noopener">https://aws.amazon.com/compare/the-difference-between-yaml-and-json/#:~:text=YAML%20and%20JSON%20are%20two,is%20also%20readable%20by%20humans.</a></p>
+    </div>
+
+    <div class="qa-block">
+      <h3>4. Explain what a peer-to-peer VPN (for example n2n) is used for, and how it differs from a traditional site-to-site VPN.</h3>
+      
+      <p>A peer-to-peer VPN connects individual devices directly to each other and builds a virtual network on top of the internet. Each device runs a small client (in n2n, an edge node) and joins the network as if it were plugged into the same LAN switch, wherever it physically is.</p>
+      <p>It is typically used to reach devices behind home routers or CGNAT without a static public IP or port forwarding, for direct collaboration and LAN gaming, and for lightweight remote access that does not depend on a corporate gateway or a paid VPN hub.</p>
+      <p>A site-to-site VPN connects whole networks, such as a branch office and headquarters. It is configured on the gateway routers or firewalls at each location, so every device behind them can communicate without any client software. It is a fixed, admin-managed setup, and if a gateway goes down, the whole site loses its connection.</p>
+      <p>A P2P VPN connects individual devices instead. The software is installed on each endpoint, devices can join or leave the mesh at any time, and traffic flows directly between peers. If one peer drops, the others keep communicating.</p>
+      <p class="source-note">Source: <a href="https://www.puredome.com/blog/difference-between-point-to-point-and-site-to-site-vpn " target="_blank" rel="noopener">https://www.puredome.com/blog/difference-between-point-to-point-and-site-to-site-vpn</a></p>
+    </div>
+  </section>
+
+  <section id="partb">
+    <p class="kicker">Part B</p>
+    <h2>Adding a Redis cache to the stack</h2>
+    <p>Here are the steps I used for the Week 5 hands-on part, and why I ran each command.</p>
+
+    <ul class="step-list">
+      <li>
+        <p>First, I added <code>redis==5.0.1</code> to <code>backend/requirements.txt</code>, so that when the image is built, <code>pip</code> installs the Redis client library the backend needs.</p>
+        <figure>
+          <img src="images/week5_req.jpg" alt="requirements.txt with redis added">
+        </figure>
+      </li>
+      <li>
+        <p>Then I imported <code>redis</code> in <code>app.py</code> and created a client pointed at <code>REDIS_HOST</code>, so the backend has a live connection to Redis to read and write cached values.</p>
+        <div class="two-col">
+          <figure><img src="images/week5_import.jpg" alt="import redis in app.py"></figure>
+          <figure><img src="images/week5_client.jpg" alt="Redis client connecting to the cache service"></figure>
+        </div>
+      </li>
+      <li>
+        <p>I wrote the <code>/api/time</code> route to check Redis first (<code>r.get</code>) and only query MySQL if nothing was cached, then save the result for 5 seconds with <code>r.setex</code> — this is the actual caching logic, so a repeated request within 5 seconds skips the database entirely.</p>
+        <pre>@app.get('/api/time')
+def db_time():
+    cached = r.get('db_time')
+    if cached:
+        return jsonify(server_time=cached, cached=True)
+
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT NOW()")
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    server_time = str(row[0])
+    r.setex('db_time', 5, server_time)
+    return jsonify(server_time=server_time, cached=False)</pre>
+      </li>
+      <li>
+        <p>Next, I wrote <code>redis-deployment.yaml</code> and <code>redis-service.yaml</code>, so Redis runs as its own Pod on Rahti with a stable internal address, the same way the other three tiers already do.</p>
+        <figure>
+          <img src="images/week5_files.jpg" alt="rahti folder showing new redis-deployment.yaml and redis-service.yaml">
+        </figure>
+      </li>
+      <li>
+        <p>I ran <code>oc apply -f</code> on both new files, to create the Redis Deployment and Service on the cluster.</p>
+        <figure>
+          <img src="images/week5_apply_redis.jpg" alt="oc apply for redis deployment and service">
+        </figure>
+      </li>
+      <li>
+        <p>I ran <code>oc get pods</code> and <code>oc get svc</code>, to check that the <code>cache</code> Pod actually came up and that its Service is listening on port 6379.</p>
+        <div class="two-col">
+          <figure><img src="images/week5_pods_cache.jpg" alt="oc get pods showing the cache pod running"></figure>
+          <figure><img src="images/week5_svc_cache.png" alt="oc get svc showing the cache service on port 6379"></figure>
+        </div>
+      </li>
+      <li>
+        <p>I added <code>REDIS_HOST: "cache"</code> to <code>configmap.yaml</code>, so the backend gets the Redis hostname from configuration instead of it being hard-coded in the Python file.</p>
+        <div class="two-col">
+          <figure><img src="images/week5_configmap_before.jpg" alt="configmap.yaml before adding REDIS_HOST"></figure>
+          <figure><img src="images/week5_configmap_after.jpg" alt="configmap.yaml after adding REDIS_HOST"></figure>
+        </div>
+      </li>
+      <li>
+        <p>I ran <code>oc apply -f rahti/configmap.yaml</code>, to push that new setting onto the cluster.</p>
+        <figure>
+          <img src="images/week5_configmap_apply.jpg" alt="oc apply for the updated configmap">
+        </figure>
+      </li>
+    </ul>
+
+    <div class="bug">
+      <strong>Bug 1.</strong> I'd merged my own MySQL-based <code>/api/visits</code> code with a Redis-based version and ended up with two functions both named <code>get_visits</code>, which crashed the app on startup:
+    </div>
+    <pre>AssertionError: View function mapping is overwriting an existing
+endpoint function: get_visits</pre>
+    <p>I removed the duplicate block, keeping one GET route to read the count and one POST route to increment it.</p>
+
+    <div class="bug">
+      <strong>Bug 2.</strong> Once that was fixed, the backend started but crashed on the first cache write, because Rahti runs containers under a non-root user that can't write to Redis's default snapshot folder:</p>
+    </div>
+    <pre>redis.exceptions.ResponseError: MISCONF Redis is configured to save
+RDB snapshots, but it's currently unable to persist to disk</pre>
+    <p>I added these two lines to the Redis Deployment, to turn off disk snapshotting entirely — safe to do since it's just a disposable cache, not durable storage:</p>
+    <pre>command: ["redis-server"]
+args: ["--save", "", "--stop-writes-on-bgsave-error", "no"]</pre>
+
+    <ul class="step-list">
+      <li>
+        <p>I rebuilt the backend image with <code>docker build</code> and pushed it to Docker Hub as <code>1.1.0</code>, so the new code (with Redis and both bugs fixed) is available for Rahti to pull.</p>
+        <div class="two-col">
+          <figure><img src="images/week5_build.jpg" alt="docker build backend 1.1.0"></figure>
+          <figure><img src="images/week5_push.jpg" alt="docker push backend 1.1.0"></figure>
+        </div>
+      </li>
+      <li>
+        <p>I ran <code>oc set image deployment/backend backend=ruvindra/lemp-backend:1.1.0</code>, to tell the backend Deployment to switch to the new image tag — a quicker way to bump just the tag without editing the YAML file by hand.</p>
+        <figure>
+          <img src="images/week5_setimage.jpg" alt="oc set image deployment backend to 1.1.0">
+        </figure>
+      </li>
+      <li>
+        <p>I ran <code>oc rollout status</code> on both <code>backend</code> and <code>cache</code>, to confirm the rollout actually finished and the new Pods are healthy.</p>
+        <div class="two-col">
+          <figure><img src="images/week5_rollout_backend.jpg" alt="rollout status for backend, successfully rolled out"></figure>
+          <figure><img src="images/week5_rollout_cache.jpg" alt="rollout status for cache, successfully rolled out"></figure>
+        </div>
+      </li>
+      <li>
+        <p>I checked <code>oc logs deployment/backend</code>, to make sure Gunicorn started clean with no traceback this time.</p>
+        <figure>
+          <img src="images/week5_logs_clean.jpg" alt="clean gunicorn startup logs after the fixes">
+        </figure>
+      </li>
+      <li>
+        <p>I ran <code>oc get pods</code> once more, to see all four tiers — backend, cache, db, and frontend — running together.</p>
+        <figure>
+          <img src="images/week5_pods_all.jpg" alt="all four pods running: backend, cache, db, frontend">
+        </figure>
+      </li>
+      <li>
+        <p>To prove the cache was actually doing something, I opened <code>/api/time</code> twice in the browser within a few seconds — the first call to see <code>cached: false</code> (read from MySQL), the second to see <code>cached: true</code> (served from Redis).</p>
+        <div class="two-col">
+          <figure><img src="images/week5_time_false.jpg" alt="api/time returning cached false on first request"></figure>
+          <figure><img src="images/week5_time_true.jpg" alt="api/time returning cached true on second request"></figure>
+        </div>
+      </li>
+      <li>
+        <p>I also checked <code>/api/visits</code>, to confirm the visit counter was unaffected by any of this — it still lives entirely in MySQL, not Redis.</p>
+        <figure>
+          <img src="images/week5_visits_json.jpg" alt="api/visits returning the current count">
+        </figure>
+      </li>
+      <li>
+        <p>I ran <code>oc delete pod</code> on the <code>cache</code> Pod on purpose, to check that the Deployment notices and replaces it automatically — same self-healing behaviour as Week 4, now with a fourth tier.</p>
+        <figure>
+          <img src="images/week5_delete_cache.jpg" alt="deleting the cache pod and a new one coming up automatically">
+        </figure>
+      </li>
+      <li>
+        <p>I did the same to the <code>db</code> Pod, to double-check that MySQL's PersistentVolumeClaim from Week 4 still holds now that Redis is part of the stack.</p>
+        <div class="two-col">
+          <figure><img src="images/week5_delete_db.jpg" alt="deleting the db pod"></figure>
+          <figure><img src="images/week5_pods_after_db.jpg" alt="pods list showing a fresh db pod running seconds later"></figure>
+        </div>
+        <p>A new <code>db</code> Pod came up within seconds, and the visit count picked up exactly where it left off — nothing was lost.</p>
+      </li>
+    </ul>
   </section>
 
 </main>
