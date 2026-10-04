@@ -558,6 +558,248 @@ args: ["--save", "", "--stop-writes-on-bgsave-error", "no"]</pre>
     </ul>
   </section>
 
+  <div class="week-divider">
+    <p class="kicker">Continuing the diary</p>
+    <h2>Week 6 — CI/CD, DevOps Automation &amp; Observability</h2>
+    <p class="sub">Same app, same Rahti project — this week's job was to stop deploying by hand and start watching the app from the outside.</p>
+  </div>
+
+  <section id="parta6">
+    <p class="kicker">Part A</p>
+    <h2>Questions &amp; answers</h2>
+    <p>This week's conceptual questions, answered in my own words before starting the hands-on part below.</p>
+
+    <div class="qa-block">
+      <h3>1. Explain the difference between Continuous Integration, Continuous Delivery and Continuous Deployment.</h3>
+      
+      <p>Continuous integration (CI) is the practice of automatically checking code changes to get fast feedback on whether they work. Every time a developer commits a change, a CI server pulls the code from source control, builds it, and runs automated tests such as unit tests, integration tests, and static analysis. For example, if a developer pushes a change to a Git repository, the CI server might run the test suite within minutes and immediately flag a failing test, rather than letting the problem surface days later. If any step fails, the developer gets automatic feedback and fixes the issue before the process starts again.</p>
+      <p>Continuous delivery and continuous deployment both pick up where CI leaves off, and they are often confused because they look almost identical up to the final step. In both, a build that passes CI is automatically deployed to one or more test environments, where further automated checks run, such as end-to-end tests, performance tests, and security tests. The real difference between them is what happens at the very last stage, the release to production.</p>
+      <p>With continuous delivery, the build is kept in a constant state of being ready to release, but an actual person has to approve and trigger the release to production. This suits something like a mobile app or an API, where you might not want to ship a new version after every single commit, and instead prefer to release on a schedule or wait until you have a meaningful batch of changes.</p>
+      <p>With continuous deployment, there is no manual approval step at all. Every change that passes all the automated tests is released to production automatically, sometimes several times a day. This fits web applications and services well, since it allows teams to ship small changes continuously and get fast feedback from real users, and to roll out a fix quickly if something goes wrong.</p>
+      <img src="images/diagram.jpg" alt="diagram">
+      <p class="source-note">Source: <a href="https://www.jetbrains.com/teamcity/ci-cd-guide/continuous-integration-vs-delivery-vs-deployment/" target="_blank" rel="noopener">https://www.jetbrains.com/teamcity/ci-cd-guide/continuous-integration-vs-delivery-vs-deployment/</a></p>
+    </div>
+
+    <div class="qa-block">
+      <h3>2. Explain the difference between a liveness probe and a readiness probe in Kubernetes/Rahti. What happens when each one fails?</h3>
+      
+      <p>Both Liveness probes and readiness probes monitor container health, but they ask different questions. A liveness probe asks whether the container is still functioning or has gotten stuck in an unrecoverable state, such as a deadlock. A readiness probe asks a narrower question: is the container currently able to handle requests?</p>
+      <p>Because of this, a liveness probe should only check the local process, for example a lightweight /healthz endpoint, without reaching external services. A readiness probe is allowed, and often expected, to check dependencies like a database connection or a cache, since those genuinely affect whether traffic should reach the Pod.</p>
+      <p><strong>What happens when a liveness probe fails:</strong> After enough consecutive failures (failureThreshold, default 3), Kubernetes assumes the application can't recover on its own. The kubelet kills the container and restarts it. This is useful for something like a real deadlock, but dangerous if the liveness probe checks an external dependency: a brief database outage could then trigger repeated restarts across all affected Pods, producing a CrashLoopBackOff, even though the application code was never the problem.</p>
+      <p><strong>What happens when a readiness probe fails:</strong> The container is left running untouched. Instead, the Pod is removed from the Service's list of endpoints, so no new traffic reaches it until the probe succeeds again. This helps during startup, and also lets an overloaded Pod step out of rotation, recover, and rejoin the pool without a disruptive restart.</p>
+      <p>In a booking app, using a complex endpoint like /flights (which depends on downstream services) as the liveness probe could cause restarts for problems that aren't the app's fault. The fix is a simple /healthz endpoint for liveness, and a separate /ready endpoint that checks dependencies for readiness.</p>
+      <p class="source-note">Sources: <a href="https://kubernetes.io/docs/concepts/workloads/pods/probes/" target="_blank" rel="noopener">https://kubernetes.io/docs/concepts/workloads/pods/probes/</a>, <a href="https://www.redhat.com/en/blog/liveness-and-readiness-probes" target="_blank" rel="noopener">https://www.redhat.com/en/blog/liveness-and-readiness-probes</a></p>
+    </div>
+
+    <div class="qa-block">
+      <h3>3. Why should secrets (registry tokens, cluster login tokens) never be hard-coded into a CI/CD pipeline file? How does GitHub Actions handle this instead?</h3>
+      
+      <p>CI/CD pipelines are usually the most privileged systems in an organization's infrastructure, since they hold credentials to push to registries, deploy to production, and query cloud APIs. Hardcoding a registry token or cluster login token into a pipeline file turns that file into a live credential anyone who can read it can use.</p>
+      <p>A few key reasons this is dangerous: deleting a secret from the current version of a file doesn't remove it from git history, so every clone of the repo still contains it unless the history itself is rewritten, meaning the real fix is to treat it as compromised and rotate it. Private repositories aren't safe by default either, hardcoded secrets are actually more common there than in public repos. Rotation also becomes a manual, error-prone process, since someone has to find and update every file referencing the token across potentially many repositories. And hardcoded tokens tend to leak further, since they're one step away from being accidentally echoed into build logs.</p>
+      <p><strong>How GitHub Actions handles this instead:</strong></p>
+      <ul>
+        <li><strong>Encrypted secrets, injected at runtime:</strong> tokens are stored through the repository's secret store (repo, environment, or org level), encrypted at rest, and only injected as environment variables when a workflow runs, via ${{ secrets.SECRET_NAME }}.</li>
+        <li><strong>Automatic log masking:</strong> GitHub Actions redacts text matching a known secret value in workflow output, though this is a safety net, not a substitute for care.</li>
+        <li><strong>Scoped secrets:</strong> secrets can be limited to a repository, organization, or specific environment (e.g. production), with environment secrets optionally requiring manual approval before use.</li>
+        <li><strong>Pinned actions:</strong> third-party actions have access to a job's secrets, so actions should be pinned to an immutable commit SHA rather than a mutable tag, preventing a hijacked tag from silently gaining access.</li>
+        <li><strong>OIDC federation:</strong> for cloud or cluster access, GitHub Actions can skip stored credentials entirely. The runner requests a short-lived, signed token proving its identity, and the provider issues temporary credentials valid only for that job, removing the static-credential problem at its root.</li>
+      </ul>
+      
+      <p class="source-note">Sources: <a href="https://pangea.cloud/securebydesign/secrets-cicd-safety/" target="_blank" rel="noopener">https://pangea.cloud/securebydesign/secrets-cicd-safety/ </a>, <a href="https://github.com/github/awesome-copilot/blob/main/instructions/github-actions-ci-cd-best-practices.instructions.md " target="_blank" rel="noopener">https://github.com/github/awesome-copilot/blob/main/instructions/github-actions-ci-cd-best-practices.instructions.md </a></p>
+    </div>
+
+    <div class="qa-block">
+      <h3>4. What are the three pillars of observability (metrics, logs, traces)? Give an example of a question each one is best suited to answer.</h3>
+
+      <p>Metrics are numeric measurements tracked over time, such as CPU usage, request rate, or error percentage. They are aggregated and cheap to store, making them well suited to dashboards and alerting.</p>
+      <p><strong>Example</strong> "What is the current CPU utilization across our server pool, or has API error rate spiked in the last five minutes?"</p>
+      <p>Logs are timestamped, detailed records of individual events, often including error messages, stack traces, and transaction IDs. They provide the specific context needed to understand a single occurrence.</p>
+      <p><strong>Example</strong> "Why did this specific database query fail, and what exact error message did the application output?"</p>
+      <p>Traces follow a single request as it moves through a distributed system, broken into spans that show which services were called, in what order, and how long each step took.</p>
+      <p><strong>Example</strong> "Where along the chain of microservices did this particular request experience a delay or breakdown?"</p>
+      <p><strong>How they work together</strong></p>
+      <p>No single pillar gives the full picture. A typical workflow is a metric alert fires because latency crossed a threshold, a trace shows which service in the request path introduced the delay, and logs from that specific service reveal the actual error message behind it. Metrics tell something is wrong, traces tell where, and logs tell why.</p>
+      <p class="source-note">Sources: <a href=":- https://cribl.io/blog/the-3-pillars-of-observability/" target="_blank" rel="noopener">:- https://cribl.io/blog/the-3-pillars-of-observability/</a>, <a href="https://www.quicknode.com/answers/metrics-vs-logs-vs-traces" target="_blank" rel="noopener">https://www.quicknode.com/answers/metrics-vs-logs-vs-traces</a>, <a href="https://www.netdata.cloud/academy/pillars-of-observability/" target="_blank" rel="noopener">https://www.netdata.cloud/academy/pillars-of-observability/</a>, <a href="https://www.ibm.com/think/insights/observability-pillars" target="_blank" rel="noopener">https://www.ibm.com/think/insights/observability-pillars</a></p>
+    </div>
+  </section>
+
+  <section id="partb6">
+    <p class="kicker">Part B</p>
+    <h2>Building a pipeline, then watching the app from outside</h2>
+    <p>Two pieces this week: a GitHub Actions workflow that builds, pushes, and deploys the backend automatically, and a pair of health probes plus structured logging so the app's own behaviour is actually observable instead of just assumed.</p>
+
+    <h3>1. The CI/CD pipeline</h3>
+    <p>I wrote <code>.github/workflows/backend-deploy.yaml</code>, triggered on every push to <code>main</code> that touches the <code>backend/</code> folder or the workflow file itself. It builds the backend image tagged with the commit SHA, pushes it to Docker Hub, installs the <code>oc</code> CLI on the runner, and patches the live Deployment with <code>oc set image</code> — the same command I'd otherwise run by hand.</p>
+    <pre>name: Build and Deploy Backend to Rahti
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-deploy.yaml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image tag
+        run: echo "IMAGE_TAG=${{ '${{ github.sha }}' }}" >> $GITHUB_ENV
+
+      - name: Build backend image
+        run: docker build -t ruvindra/lemp-backend:$IMAGE_TAG -f backend/Dockerfile .
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ '${{ secrets.DOCKERHUB_USERNAME }}' }}
+          password: ${{ '${{ secrets.DOCKERHUB_TOKEN }}' }}
+
+      - name: Push image
+        run: docker push ruvindra/lemp-backend:$IMAGE_TAG
+
+      - name: Install oc CLI
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: "4"
+
+      - name: Deploy to Rahti
+        run: |
+          oc login --token=${{ '${{ secrets.RAHTI_TOKEN }}' }} --server=${{ '${{ secrets.RAHTI_SERVER }}' }}
+          oc set image deployment/backend backend=ruvindra/lemp-backend:$IMAGE_TAG</pre>
+    <figure>
+      <img src="images/week6_workflow_file_created.jpg" alt="VS Code explorer showing backend-deploy.yaml created under .github/workflows">
+      <figcaption>The workflow file in place under <code>.github/workflows/</code>.</figcaption>
+    </figure>
+    <figure>
+      <img src="images/week6_workflow_yaml.jpg" alt="Full backend-deploy.yaml source shown in the GitHub web editor">
+      <figcaption>The full workflow source, as GitHub sees it.</figcaption>
+    </figure>
+    <p>All four credentials it needs — <code>DOCKERHUB_USERNAME</code>, <code>DOCKERHUB_TOKEN</code>, <code>RAHTI_SERVER</code>, and <code>RAHTI_TOKEN</code> — are GitHub repository secrets, referenced only as <code>${{ '${{ secrets.NAME }}' }}</code> and never visible as values anywhere, including in this screenshot of the repository's secret list:</p>
+    <figure>
+      <img src="images/docker_token.jpg" alt="docker_token">
+      <img src="images/whoami.jpg" alt="whoami">
+      <img src="images/week6_secrets_full.jpg" alt="GitHub repository secrets list showing DOCKERHUB_TOKEN, DOCKERHUB_USERNAME, RAHTI_SERVER, RAHTI_TOKEN by name only">
+      <figcaption>All four secrets present by name — GitHub never displays a stored secret's value again once saved.</figcaption>
+    </figure>
+
+    <h3>Getting there took two failed runs first</h3>
+    <p>The first attempts didn't work, which turned out to be useful debugging practice:</p>
+    <figure>
+      <img src="images/week6_run_failed_summary.jpg" alt="First GitHub Actions run failed after 20 seconds">
+      <figcaption>Run #1 — failed in 20s.</figcaption>
+    </figure>
+    <figure>
+      <img src="images/week6_run_failed_detail.jpg" alt="Log in to Docker Hub step failing with malformed HTTP Authorization header">
+      <figcaption>The "Log in to Docker Hub" step failing with <code>malformed HTTP Authorization header</code> — the manual <code>echo | docker login --password-stdin</code> approach was the cause, fixed by switching to the official <code>docker/login-action@v3</code>.</figcaption>
+    </figure>
+
+    <h3>The run that worked</h3>
+    <figure>
+      <img src="images/week6_run_success.jpg" alt="GitHub Actions run succeeded in 31 seconds, all steps green including Login Succeeded">
+      <figcaption>All steps green, finishing in 31s — including <code>Login Succeeded!</code> on the Docker Hub step.</figcaption>
+    </figure>
+    <figure>
+      <img src="images/week6_push_image.jpg" alt="Push image step log showing layers pushed and final image digest">
+      <figcaption>The built image's layers pushed to Docker Hub, ending in a content digest.</figcaption>
+    </figure>
+
+    <h3>Proof it actually deployed, not just built</h3>
+    <p>A green checkmark only proves the YAML ran — it doesn't prove Rahti changed. So I checked the live cluster state against the commit that triggered the run:</p>
+    <figure>
+      <img src="images/week6_pods_fresh.jpg" alt="oc get pods showing the backend pod freshly restarted">
+      <figcaption><code>oc get pods</code> — a brand-new backend pod age right after the run finished.</figcaption>
+    </figure>
+    <figure>
+      <img src="images/week6_image_tag_sha.jpg" alt="oc get deployment backend jsonpath showing image tag matching the exact commit SHA">
+      <figcaption><code>oc get deployment backend -o jsonpath=...</code> — the running image's tag is the exact commit SHA that triggered the build, proving traceability end-to-end.</figcaption>
+    </figure>
+
+    <h3>2. Liveness and readiness probes</h3>
+    <p>I reused the existing <code>/api/health</code> route as the liveness check — it only confirms the Flask process itself responds, with no outside calls — and added a new <code>/ready</code> route that actually attempts a database connection:</p>
+    <pre>@app.get('/ready')
+def ready():
+    """Readiness: checks the DB dependency, not just the process."""
+    try:
+        conn = get_connection()
+        conn.close()
+        return jsonify(status='ready'), 200
+    except Exception as e:
+        return jsonify(status='not ready', error=str(e)), 503</pre>
+    <p>Then I attached both probes to the live Deployment directly, the same way I'd patch an image tag:</p>
+    <figure>
+      <img src="images/week6_set_probe_cmds.jpg" alt="oc set probe commands for liveness and readiness, both confirmed updated">
+      <figcaption>Both probes attached directly to the live Deployment — <code>deployment.apps/backend probes updated</code> for each.</figcaption>
+    </figure>
+    <figure>
+      <img src="images/week6_pods_after_probes.jpg" alt="oc get pods showing the backend pod healthy after the probe patch rolled out a new pod">
+      <figcaption>The rollout triggered by the probe patch — new backend pod, healthy, 0 restarts.</figcaption>
+    </figure>
+
+    <h3>Making the readiness check actually fail</h3>
+    <p>A probe that's only ever been green doesn't prove much, so I broke its one real dependency on purpose — scaling the database to zero replicas:</p>
+    <pre>.\oc scale deployment/db --replicas=0</pre>
+    <p>Before: the Service had one healthy endpoint. About 20 seconds after scaling the database down — enough for three failed checks at a 10-second period — the backend disappeared from the endpoint list entirely, while the Pod itself stayed <code>Running</code> with zero restarts:</p>
+    <pre>PS C:\Cloud Service\lemp-containers&gt; .\oc get endpoints backend
+NAME      ENDPOINTS   AGE
+backend               13d
+
+PS C:\Cloud Service\lemp-containers&gt; .\oc get pods
+backend-855875b9c5-hnztk   0/1   Running   0   6m14s</pre>
+    <p>That's the real distinction between the two probe types in practice: a failing readiness check pulls a Pod out of rotation without ever touching it, while only a failing liveness check would have caused a restart. After scaling <code>db</code> back to one replica and giving it time to come up, the backend's endpoint reappeared automatically — still zero restarts the entire time:</p>
+    <pre>PS C:\Cloud Service\lemp-containers&gt; .\oc get pods
+backend-855875b9c5-hnztk   1/1   Running   0   7m32s
+db-8669b488c4-mrjkz        1/1   Running   0   39s
+
+PS C:\Cloud Service\lemp-containers&gt; .\oc get endpoints backend
+NAME      ENDPOINTS            AGE
+backend   10.131.30.118:8000   13d</pre>
+    <p class="source-note">(Screenshots of each <code>oc get endpoints</code> / <code>oc get pods</code> state to follow — the exact commands and their output are quoted above.)</p>
+
+    <h3>3. Structured logging</h3>
+    <p>I added a <code>before_request</code>/<code>after_request</code> hook that logs every request as one JSON line — timestamp, method, path, status code, response time — to stdout, which is exactly what <code>oc logs</code> reads:</p>
+    <pre>logging.basicConfig(level=logging.INFO, format='%(message)s')
+logger = logging.getLogger(__name__)
+
+@app.before_request
+def start_timer():
+    request.start_time = time.time()
+
+@app.after_request
+def log_request(response):
+    log_entry = {
+        'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+        'method': request.method,
+        'path': request.path,
+        'status': response.status_code,
+        'response_time_ms': round((time.time() - request.start_time) * 1000, 2)
+    }
+    logger.info(json.dumps(log_entry))
+    return response</pre>
+    <pre>PS C:\Cloud Service\lemp-containers&gt; .\oc logs deployment/backend --tail=20
+{"timestamp": "2026-10-04T18:27:55Z", "method": "GET", "path": "/api/health", "status": 200, "response_time_ms": 0.14}
+{"timestamp": "2026-10-04T18:27:57Z", "method": "GET", "path": "/ready", "status": 200, "response_time_ms": 16.68}
+{"timestamp": "2026-10-04T18:28:05Z", "method": "GET", "path": "/api/health", "status": 200, "response_time_ms": 0.1}
+{"timestamp": "2026-10-04T18:28:07Z", "method": "GET", "path": "/ready", "status": 200, "response_time_ms": 16.23}</pre>
+    <p class="source-note">(Screenshot of the <code>oc logs</code> output to follow — the output itself is quoted above.)</p>
+    <div class="callout"><strong>What a real alert rule might look like:</strong> I'd alert on the <em>error rate</em> of <code>/ready</code> over a window rather than a single failure — e.g. "page on-call if more than 50% of <code>/ready</code> checks return non-200 for 2 consecutive minutes." A sustained <code>/api/health</code> (liveness) failure would get a higher-severity page of its own, since that means the process itself is stuck, not just a dependency outage like the one demonstrated above.</div>
+
+    <div class="bug">
+      <strong>Bug 1 — malformed Authorization header.</strong> The "Log in to Docker Hub" step failed with <code>malformed HTTP Authorization header</code> even after re-pasting the token carefully. The manual <code>echo "$TOKEN" | docker login --password-stdin</code> approach was the culprit; switching that step to the official <code>docker/login-action@v3</code> fixed it completely.
+    </div>
+    <div class="bug">
+      <strong>Bug 2 — workflow never triggered.</strong> After pushing, no new run appeared at all, with no error shown anywhere. The <code>paths:</code> filter referenced <code>backend-deploy.yml</code> while the actual file was named <code>backend-deploy.yaml</code> — GitHub silently skips a run when the only changed file doesn't match the filter. Fixing the extension in the filter fixed the trigger.
+    </div>
+    <div class="bug">
+      <strong>Bug 3 — deploy step failing with an empty token.</strong> The log showed <code>oc login --token= --server=***</code> — an empty token value. The <code>RAHTI_TOKEN</code> repository secret had never actually been added, only <code>DOCKERHUB_USERNAME</code>, <code>DOCKERHUB_TOKEN</code>, and <code>RAHTI_SERVER</code> existed. Generating a fresh token with <code>oc whoami -t</code> and adding it as a secret resolved it.
+    </div>
+    <div class="bug">
+      <strong>Bug 4 — a real secret leaked into the repo.</strong> A <code>.env</code> file containing the live database password had been committed before <code>.gitignore</code> existed, so <code>.gitignore</code> had no retroactive effect — it only blocks tracking of new files. Fixed by running <code>git rm --cached .env</code> to stop tracking it going forward, then rotating the actual database password so the historical leak in git history is no longer exploitable.
+    </div>
+  </section>
+
 </main>
 
 <script>
