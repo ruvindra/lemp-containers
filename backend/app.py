@@ -1,9 +1,31 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import os
 import mysql.connector
 import redis
 
 app = Flask(__name__)
+import time
+import json
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+logger = logging.getLogger(__name__)
+
+@app.before_request
+def start_timer():
+    request.start_time = time.time()
+
+@app.after_request
+def log_request(response):
+    log_entry = {
+        'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+        'method': request.method,
+        'path': request.path,
+        'status': response.status_code,
+        'response_time_ms': round((time.time() - request.start_time) * 1000, 2)
+    }
+    logger.info(json.dumps(log_entry))
+    return response
 
 DB_HOST = os.getenv('DB_HOST', 'db')
 DB_USER = os.getenv('DB_USER', 'appuser')
@@ -38,6 +60,16 @@ def ensure_schema():
 @app.get('/api/health')
 def health():
     return {'status': 'ok'}
+
+@app.get('/ready')          # ← new, add this block here
+def ready():
+    """Readiness: checks the DB dependency, not just the process."""
+    try:
+        conn = get_connection()
+        conn.close()
+        return jsonify(status='ready'), 200
+    except Exception as e:
+        return jsonify(status='not ready', error=str(e)), 503
 
 
 @app.get('/api')
